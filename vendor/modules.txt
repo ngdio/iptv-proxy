@@ -104,6 +104,9 @@ github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.2
 ## explicit; go 1.12
 github.com/modern-go/reflect2
+# github.com/ngdio/go.xtream-codes v0.0.0-20240825211404-b400c3744cd2
+## explicit; go 1.17
+github.com/ngdio/go.xtream-codes
 # github.com/pelletier/go-toml v1.9.3
 ## explicit; go 1.12
 github.com/pelletier/go-toml
@@ -139,9 +142,6 @@ github.com/spf13/viper
 # github.com/subosito/gotenv v1.2.0
 ## explicit
 github.com/subosito/gotenv
-# github.com/tellytv/go.xtream-codes v0.0.0-20220204001149-59925bc76764
-## explicit; go 1.17
-github.com/tellytv/go.xtream-codes
 # github.com/twitchyliquid64/golang-asm v0.15.1
 ## explicit; go 1.13
 github.com/twitchyliquid64/golang-asm/asm/arch

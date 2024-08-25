@@ -17,17 +17,27 @@ type Timestamp struct {
 
 // MarshalJSON returns the Unix timestamp as a string.
 func (t Timestamp) MarshalJSON() ([]byte, error) {
-	if t.quoted {
-		return []byte(`"` + strconv.FormatInt(t.Time.Unix(), 10) + `"`), nil
+	stamp := ""
+	// Return empty string if no timestamp has been received for the stream
+	if !t.Time.IsZero() {
+		stamp = strconv.FormatInt(t.Time.Unix(), 10)
 	}
-	return []byte(strconv.FormatInt(t.Time.Unix(), 10)), nil
+	if t.quoted {
+		return []byte(`"` + stamp + `"`), nil
+	}
+	return []byte(stamp), nil
 }
 
 // UnmarshalJSON converts the int or string to a Unix timestamp.
 func (t *Timestamp) UnmarshalJSON(b []byte) error {
 	// Timestamps are sometimes quoted, sometimes not, lets just always remove quotes just in case...
 	t.quoted = strings.Contains(string(b), `"`)
-	ts, err := strconv.Atoi(strings.Replace(string(b), `"`, "", -1))
+	unquoted := strings.Replace(string(b), `"`, "", -1)
+	// Skip conversion if no timestamp is given as it will fail otherwise
+	if unquoted == "" {
+		return nil
+	}
+	ts, err := strconv.Atoi(unquoted)
 	if err != nil {
 		return err
 	}
