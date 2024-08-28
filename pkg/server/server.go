@@ -21,7 +21,9 @@ package server
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -36,6 +38,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var defaultDownloadedM3UPath = filepath.Join(os.TempDir(), uuid.NewV4().String()+".iptv-downloaded.m3u")
 var defaultProxyfiedM3UPath = filepath.Join(os.TempDir(), uuid.NewV4().String()+".iptv-proxy.m3u")
 var endpointAntiColision = strings.Split(uuid.NewV4().String(), "-")[0]
 
@@ -47,6 +50,8 @@ type Config struct {
 	playlist *m3u.Playlist
 	// this variable is set only for m3u proxy endpoints
 	track *m3u.Track
+	// path to the downloaded m3u file
+	downloadedM3UPath string
 	// path to the proxyfied m3u file
 	proxyfiedM3UPath string
 
@@ -58,20 +63,49 @@ func NewServer(config *config.ProxyConfig) (*Config, error) {
 	var p m3u.Playlist
 	if config.RemoteURL.String() != "" {
 		var err error
-		p, err = m3u.Parse(config.RemoteURL.String())
+
+		client := &http.Client{}
+		var req *http.Request
+		req, err = http.NewRequest("GET", config.RemoteURL.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+		if config.UserAgent != "" {
+			req.Header.Set("User-Agent", config.UserAgent)
+		}
+		var resp *http.Response
+		resp, err = client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		var f *os.File
+		f, err = os.Create(defaultDownloadedM3UPath)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+
+		_, err = io.Copy(f, resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		p, err = m3u.Parse(defaultDownloadedM3UPath)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-        if trimmedCustomId := strings.Trim(config.CustomId, "/"); trimmedCustomId != "" {
-                endpointAntiColision = trimmedCustomId
-        }
+	if trimmedCustomId := strings.Trim(config.CustomId, "/"); trimmedCustomId != "" {
+		endpointAntiColision = trimmedCustomId
+	}
 
 	return &Config{
 		config,
 		&p,
 		nil,
+		defaultDownloadedM3UPath,
 		defaultProxyfiedM3UPath,
 		endpointAntiColision,
 	}, nil
